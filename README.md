@@ -111,24 +111,20 @@ mappedin_mvf_importer/
 ├── mappedin_mvf_importer.py            # Main plugin class
 ├── mappedin_mvf_importer_dialog.py     # Import dialog
 ├── mappedin_mvf_importer_dialog_base.ui # UI layout
-├── mvf_parser.py                       # MVF parsing logic
+├── mvf_parser_v3.py                    # MVF v3 parsing logic
 ├── resources.py                        # Compiled resources
 ├── resources.qrc                       # Resource definitions
 ├── metadata.txt                        # Plugin metadata
-├── icon.png                           # Plugin icon
-├── Makefile                           # Build configuration
-└── README.md                          # Documentation
+├── logowhite.png                       # Plugin icon
+├── Makefile                            # Build configuration
+└── README.md                           # Documentation
 ```
 
 ## Customization
 
 ### Adding New MVF Data Types
 
-To support additional MVF data types, modify `mvf_parser.py`:
-
-1. Add parsing logic in the `MVFParser` class
-2. Create field definitions for new data types
-3. Implement geometry conversion for new formats
+To support additional MVF data types, modify `mvf_parser_v3.py`.
 
 ### Modifying the UI
 
@@ -155,10 +151,6 @@ The import dialog can be customized by editing:
    - Verify coordinate reference system settings
    - Ensure geometry data is valid
 
-### Debug Mode
-
-For debugging, you can enable Python console output in the plugin code by uncommenting print statements in `mvf_parser.py`.
-
 ## License
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
@@ -184,7 +176,7 @@ For issues and questions:
 
 ### Version 1.0.0
 - Initial release
-- Support for ZIP and JSON MVF packages
+- Support for MVF v3 ZIP bundles
 - Floor plan and POI import
 - Configurable import options
 - QGIS 3.x compatibility
