@@ -23,9 +23,7 @@ deprecated=False
 # License must be GPLv2 or later compatible
 license=GPL-2.0-or-later
 
-# Since QGIS version 3.8, a comma separated list of plugins to be installed
-# (or upgraded) can be specified.
-plugin_dependencies=
+# No plugin dependencies required - this plugin runs with standard QGIS installation
 
 # If the plugin can run on QGIS Server.
 server=False
