@@ -371,7 +371,7 @@ class MappedInMVFImporter:
                 project = QgsProject.instance()
                 # Set visible attribution for OSM tile usage policy
                 try:
-                    osm_layer.setAttribution("© OpenStreetMap contributors")
+                    osm_layer.serverProperties().setAttribution("© OpenStreetMap contributors")
                     osm_layer.setAttributionUrl(QUrl("https://www.openstreetmap.org/copyright"))
                 except Exception:
                     pass
@@ -398,7 +398,7 @@ class MappedInMVFImporter:
                 if osm_layer_alt.isValid():
                     project = QgsProject.instance()
                     try:
-                        osm_layer_alt.setAttribution("© OpenStreetMap contributors")
+                        osm_layer_alt.serverProperties().setAttribution("© OpenStreetMap contributors")
                         osm_layer_alt.setAttributionUrl(QUrl("https://www.openstreetmap.org/copyright"))
                     except Exception:
                         pass
