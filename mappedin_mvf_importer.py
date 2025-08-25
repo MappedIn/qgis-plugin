@@ -214,8 +214,18 @@ class MappedInMVFImporter:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.dlg = MappedInMVFImporterDialog()
+            self.dlg = MappedInMVFImporterDialog(parent=self.iface.mainWindow())
 
+        # Check if dialog is already visible to prevent multiple instances
+        if self.dlg.isVisible():
+            # Bring existing dialog to front instead of creating new instance
+            self.dlg.raise_()
+            self.dlg.activateWindow()
+            return
+
+        # Clear any previous file selection to prevent accidental reloads
+        self.dlg.clear_selection()
+        
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
@@ -259,6 +269,9 @@ class MappedInMVFImporter:
                 "Success",
                 f"Successfully imported MVF package with {len(layers_data)} layer(s)."
             )
+            
+            # Clear the file selection after successful import to prevent accidental reloads
+            self.dlg.clear_selection()
             
         except Exception as e:
             QMessageBox.critical(

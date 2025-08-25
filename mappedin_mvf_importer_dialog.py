@@ -25,6 +25,7 @@ import os
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtWidgets import QFileDialog
+from qgis.PyQt.QtCore import Qt
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -40,6 +41,10 @@ class MappedInMVFImporterDialog(QtWidgets.QDialog, FORM_CLASS):
         # self.<objectname>, and you can use autoconnect slots - see
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html#widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
+        
+        # Set window flags for better dialog behavior
+        self.setWindowFlags(Qt.Dialog | Qt.WindowStaysOnTopHint | Qt.WindowCloseButtonHint)
+        self.setModal(True)  # Make dialog modal to prevent getting lost behind main window
         
         # Connect the browse button to file selection
         self.browse_button.clicked.connect(self.browse_file)
@@ -67,3 +72,8 @@ class MappedInMVFImporterDialog(QtWidgets.QDialog, FORM_CLASS):
     def get_osm_baselayer_enabled(self):
         """Return whether OSM base layer should be enabled"""
         return self.enable_osm_baselayer_check.isChecked()
+    
+    def clear_selection(self):
+        """Clear the selected file path and reset the UI"""
+        self.selected_file = None
+        self.file_path_edit.clear()  # Clear the text field
