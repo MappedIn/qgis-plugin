@@ -29,7 +29,7 @@ from qgis.core import (
     QgsSymbolLayer,
     QgsProperty
 )
-from qgis.PyQt.QtCore import QVariant
+from qgis.PyQt.QtCore import QMetaType
 from qgis.PyQt.QtGui import QColor, QFont
 
 
@@ -577,36 +577,36 @@ class MVFv3Parser:
     def _get_floor_fields(self) -> QgsFields:
         """Define fields for floor boundary layers"""
         fields = QgsFields()
-        fields.append(QgsField('floor_id', QVariant.String))
-        fields.append(QgsField('name', QVariant.String))
-        fields.append(QgsField('elevation', QVariant.Double))
-        fields.append(QgsField('description', QVariant.String))
-        fields.append(QgsField('external_id', QVariant.String))
+        fields.append(QgsField('floor_id', QMetaType.QString))
+        fields.append(QgsField('name', QMetaType.QString))
+        fields.append(QgsField('elevation', QMetaType.Double))
+        fields.append(QgsField('description', QMetaType.QString))
+        fields.append(QgsField('external_id', QMetaType.QString))
         return fields
     
     def _get_geometry_fields(self) -> QgsFields:
         """Define fields for geometry layers"""
         fields = QgsFields()
-        fields.append(QgsField('geometry_id', QVariant.String))
-        fields.append(QgsField('floor_id', QVariant.String))
-        fields.append(QgsField('name', QVariant.String))
-        fields.append(QgsField('description', QVariant.String))
-        fields.append(QgsField('external_id', QVariant.String))
-        fields.append(QgsField('icon', QVariant.String))
+        fields.append(QgsField('geometry_id', QMetaType.QString))
+        fields.append(QgsField('floor_id', QMetaType.QString))
+        fields.append(QgsField('name', QMetaType.QString))
+        fields.append(QgsField('description', QMetaType.QString))
+        fields.append(QgsField('external_id', QMetaType.QString))
+        fields.append(QgsField('icon', QMetaType.QString))
         return fields
     
     def _get_location_fields(self) -> QgsFields:
         """Define fields for location layers"""
         fields = QgsFields()
-        fields.append(QgsField('location_id', QVariant.String))
-        fields.append(QgsField('name', QVariant.String))
-        fields.append(QgsField('description', QVariant.String))
-        fields.append(QgsField('external_id', QVariant.String))
-        fields.append(QgsField('icon', QVariant.String))
-        fields.append(QgsField('categories', QVariant.String))
-        fields.append(QgsField('floor_id', QVariant.String))
-        fields.append(QgsField('geometry_id', QVariant.String))
-        fields.append(QgsField('anchor_count', QVariant.String))  # Changed to String to avoid type issues
+        fields.append(QgsField('location_id', QMetaType.QString))
+        fields.append(QgsField('name', QMetaType.QString))
+        fields.append(QgsField('description', QMetaType.QString))
+        fields.append(QgsField('external_id', QMetaType.QString))
+        fields.append(QgsField('icon', QMetaType.QString))
+        fields.append(QgsField('categories', QMetaType.QString))
+        fields.append(QgsField('floor_id', QMetaType.QString))
+        fields.append(QgsField('geometry_id', QMetaType.QString))
+        fields.append(QgsField('anchor_count', QMetaType.QString))  # Changed to String to avoid type issues
         return fields
     
     def _configure_location_layer_styling(self, layer: QgsVectorLayer):
@@ -674,8 +674,8 @@ class MVFv3Parser:
     def _get_extension_fields(self) -> QgsFields:
         """Define fields for generic extension layers"""
         fields = QgsFields()
-        fields.append(QgsField('id', QVariant.String))
-        fields.append(QgsField('data', QVariant.String))
+        fields.append(QgsField('id', QMetaType.QString))
+        fields.append(QgsField('data', QMetaType.QString))
         return fields
     
     def create_qgis_layer(self, layer_info: Dict[str, Any]) -> Optional[QgsVectorLayer]:
