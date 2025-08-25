@@ -174,6 +174,14 @@ For issues and questions:
 
 ## Changelog
 
+### Version 1.1.0
+- Fixed all QGIS deprecation warnings for future compatibility
+- Improved dialog window management (modal, stays on top)
+- Prevented accidental file reloads by clearing selection after import
+- Removed empty Plugin Dependencies Manager popup on installation
+- Enhanced user experience with professional dialog behavior
+- Updated documentation to reflect current codebase
+
 ### Version 1.0.0
 - Initial release
 - Support for MVF v3 ZIP bundles
