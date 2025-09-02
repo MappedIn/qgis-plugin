@@ -1,12 +1,12 @@
 [general]
 name=Mappedin MVF Importer
 qgisMinimumVersion=3.0
-description=A QGIS plugin for importing Mappedin MVF v3 (Map Venue Format) packages
-version=1.1.0
+description=A QGIS plugin for importing Mappedin MVF v3 (Map Venue Format) packages from local files or directly from the Mappedin API
+version=2.0.0
 author=Mappedin
 email=help@mappedin.com
 
-about=This plugin enables QGIS users to import Mappedin MVF v3 packages directly into QGIS as vector layers. MVF v3 packages contain indoor mapping data including floor plans, points of interest, and venue metadata. No external Python dependencies are required; the plugin runs with a standard QGIS 3.x installation. The Mappedin name and logo (logowhite.png) are trademarks of Mappedin and are included solely for use within this plugin; they are not licensed for reuse, redistribution, or modification outside this plugin.
+about=This plugin enables QGIS users to import Mappedin MVF v3 packages directly into QGIS as vector layers. Users can import from local ZIP files or fetch data directly from the Mappedin API using their API credentials. MVF v3 packages contain indoor mapping data including floor plans, points of interest, and venue metadata. The plugin requires the 'requests' Python library for API functionality, which is typically included with QGIS installations. The Mappedin name and logo (logowhite.png) are trademarks of Mappedin and are included solely for use within this plugin; they are not licensed for reuse, redistribution, or modification outside this plugin.
 
 tracker=http://github.com/mappedin/qgis-plugin/issues
 repository=http://github.com/mappedin/qgis-plugin

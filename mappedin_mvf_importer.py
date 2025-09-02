@@ -241,12 +241,13 @@ class MappedInMVFImporter:
         # Get the selected file path and options from the dialog
         file_path = self.dlg.get_selected_file()
         enable_osm_baselayer = self.dlg.get_osm_baselayer_enabled()
+        import_mode = self.dlg.get_import_mode()
         
         if not file_path:
             QMessageBox.warning(
                 self.iface.mainWindow(),
                 "Warning",
-                "Please select an MVF package file."
+                "Please select an MVF package file or configure API settings."
             )
             return
         
@@ -263,11 +264,18 @@ class MappedInMVFImporter:
                 self._add_osm_baselayer()
                 # Extra safety: ensure any OSM layers are positioned at absolute bottom
                 self._ensure_osm_at_bottom()
+            
+            # Prepare success message
+            if import_mode == 'api':
+                creds = self.dlg.get_api_credentials()
+                success_msg = f"Successfully imported MVF package for venue '{creds['venue_id']}' with {len(layers_data)} layer(s)."
+            else:
+                success_msg = f"Successfully imported MVF package with {len(layers_data)} layer(s)."
                     
             QMessageBox.information(
                 self.iface.mainWindow(),
                 "Success",
-                f"Successfully imported MVF package with {len(layers_data)} layer(s)."
+                success_msg
             )
             
             # Clear the file selection after successful import to prevent accidental reloads
@@ -279,6 +287,10 @@ class MappedInMVFImporter:
                 "Error",
                 f"Failed to import MVF package: {str(e)}"
             )
+        finally:
+            # Clean up temporary files if using API import
+            if import_mode == 'api':
+                self.dlg.cleanup_temp_files()
     
     def _organize_and_add_layers(self, parser, layers_data):
         """Organize layers into floor groups with proper ordering"""
@@ -311,6 +323,9 @@ class MappedInMVFImporter:
                 if floor_key not in floor_layers:
                     floor_layers[floor_key] = {
                         'locations': [],
+                        'doors': [],
+                        'windows': [],
+                        'walls': [],
                         'points': [],
                         'lines': [],
                         'spaces': []
@@ -319,9 +334,15 @@ class MappedInMVFImporter:
                 # Categorize layer by type
                 if 'Locations' in layer_name:
                     floor_layers[floor_key]['locations'].append(layer_info)
+                elif 'Doors' in layer_name:
+                    floor_layers[floor_key]['doors'].append(layer_info)
+                elif 'Windows' in layer_name:
+                    floor_layers[floor_key]['windows'].append(layer_info)
+                elif 'Walls' in layer_name:
+                    floor_layers[floor_key]['walls'].append(layer_info)
                 elif 'Connections' in layer_name:
                     floor_layers[floor_key]['points'].append(layer_info)
-                elif 'Lines' in layer_name:
+                elif 'Lines' in layer_name or 'Doors' in layer_name:
                     floor_layers[floor_key]['lines'].append(layer_info)
                 elif 'Spaces' in layer_name:
                     floor_layers[floor_key]['spaces'].append(layer_info)
@@ -339,16 +360,32 @@ class MappedInMVFImporter:
         
         # Create floor groups in descending order (Level 2, Level 1, etc.) AFTER boundaries
         floor_keys = sorted(floor_layers.keys(), reverse=True)
+        floor_groups_created = []  # Track created groups for visibility management
         
         for floor_key in floor_keys:
             floor_data = floor_layers[floor_key]
             
+            # Check if this floor has any layers before creating the group
+            total_layers = (len(floor_data['locations']) + len(floor_data['doors']) + 
+                          len(floor_data['windows']) + len(floor_data['walls']) + 
+                          len(floor_data['points']) + len(floor_data['lines']) + 
+                          len(floor_data['spaces']))
+            
+            if total_layers == 0:
+                # DEBUG: print(f"Skipping empty floor group for {floor_key} - no layers to add")
+                continue
+            
             # Create floor group
             group = root.addGroup(f"{floor_key} Group")
+            floor_groups_created.append((floor_key, group))
+            layers_added = 0
             
-            # Add layers in specific order: Locations, Connections, Lines, Spaces
+            # Add layers in specific order: Locations, Doors, Windows, Walls, Connections, Lines, Spaces
             layer_order = [
                 ('locations', floor_data['locations']),
+                ('doors', floor_data['doors']),
+                ('windows', floor_data['windows']),
+                ('walls', floor_data['walls']),
                 ('connections', floor_data['points']),
                 ('lines', floor_data['lines']),
                 ('spaces', floor_data['spaces'])
@@ -362,6 +399,49 @@ class MappedInMVFImporter:
                         project.addMapLayer(layer, addToLegend=False)
                         # Then add to group
                         group.addLayer(layer)
+                        layers_added += 1
+            
+            # If no layers were actually added, remove the empty group
+            if layers_added == 0:
+                # DEBUG: print(f"Removing empty floor group for {floor_key} - no valid layers created")
+                root.removeChildNode(group)
+                # Remove from tracking list as well
+                floor_groups_created = [(k, g) for k, g in floor_groups_created if g != group]
+        
+        # Hide all floor groups except Level 1 (ground floor) for better UX
+        if len(floor_groups_created) > 1:
+            # DEBUG: print(f"Multiple floors detected ({len(floor_groups_created)}), hiding all except Level 1 (ground floor)")
+            
+            # Find the ground floor (Level 1 or lowest floor)
+            ground_floor_group = None
+            ground_floor_key = None
+            
+            # Look for "Level 1" or similar ground floor indicators
+            for floor_key, group in floor_groups_created:
+                floor_lower = floor_key.lower()
+                if ('level 1' in floor_lower or 'floor 1' in floor_lower or 
+                    'ground' in floor_lower or 'l1' in floor_lower or 
+                    floor_key.endswith(' 1')):
+                    ground_floor_group = group
+                    ground_floor_key = floor_key
+                    break
+            
+            # If no explicit "Level 1" found, use the last floor in the sorted list (lowest ordinal)
+            if not ground_floor_group and floor_groups_created:
+                ground_floor_key, ground_floor_group = floor_groups_created[-1]
+                # DEBUG: print(f"  No explicit 'Level 1' found, using lowest floor: {ground_floor_key}")
+            
+            # Set visibility for all floors
+            for floor_key, group in floor_groups_created:
+                if group == ground_floor_group:
+                    # DEBUG: print(f"  Keeping {floor_key} visible (ground floor)")
+                    # group.setItemVisibilityChecked(True)  # Already visible by default
+                else:
+                    group.setItemVisibilityChecked(False)
+                    # DEBUG: print(f"  Hiding {floor_key} (upper floor)")
+                    
+        elif len(floor_groups_created) == 1:
+            # DEBUG: print("Single floor detected, keeping it visible")
         
         # Set canvas extent and refresh
         if layers_data:

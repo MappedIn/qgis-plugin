@@ -1,190 +1,215 @@
 # Mappedin MVF Importer - QGIS Plugin
 
-A QGIS plugin for importing Mappedin MVF v3 (Map Venue Format) packages directly into QGIS as vector layers.
+A comprehensive QGIS plugin for importing Mappedin MVF (Mappedin Venue Format) v3 packages into QGIS as organized, styled vector layers.
+
+## Description
+
+This plugin provides seamless integration between Mappedin's indoor mapping platform and QGIS. Import MVF v3 packages either from local files or directly from the Mappedin API, with automatic layer organization, intelligent styling, and multi-floor visibility management for optimal visualization of indoor mapping data.
 
 ## Features
 
-- Import Mappedin MVF v3 packages (ZIP package per spec)
-- Automatically create separate layers for:
-  - Floor plans (polygon layers)
-  - Points of Interest (point layers)
-- User-friendly import dialog with options
+### 🗺️ **Dual Import Methods**
+- **File Import**: Load MVF v3 packages from local ZIP files
+- **API Import**: Direct download from Mappedin cloud with token caching
+
+### 🏗️ **Smart Layer Organization**
+- **Floor-based Grouping**: Automatically organizes layers by floor levels
+- **Layer Categorization**: Separates doors, windows, walls, connections, spaces, and locations
+- **Multi-floor Visibility**: Auto-hides upper floors, shows ground floor by default
+
+### 🎨 **Intelligent Styling**
+- **Doors**: White lines (1.4 width) with proper categorization
+- **Windows**: Blue lines (1.2 width) for clear identification  
+- **Walls**: Dark grey lines for structural elements
+- **Connections**: Green arrow markers (size 4) for stairs/elevators only
+- **Locations**: Styled point markers with labeling
+
+### 🔧 **Advanced Features**
+- **Token Caching**: Persistent API authentication across sessions
+- **Door Navigation Filtering**: Excludes API navigation points from visualization
+- **Empty Layer Prevention**: Only creates layers with actual data
+- **Venue Selection**: User-friendly dropdown with fetch functionality
 
 ## Installation
 
-### Option 1: Manual Installation
+### From QGIS Plugin Repository
+1. In QGIS, go to **Plugins** → **Manage and Install Plugins**
+2. Search for "Mappedin MVF Importer"
+3. Click **Install Plugin**
+4. Enable the plugin
 
-1. Copy the entire plugin folder to your QGIS plugins directory:
+### From ZIP File
+1. Download the latest release ZIP file
+2. In QGIS, go to **Plugins** → **Manage and Install Plugins**
+3. Click **Install from ZIP**
+4. Select the downloaded ZIP file
+5. Enable the plugin
+
+### Development Installation
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/mappedin/qgis-plugin.git
+   ```
+2. Copy the plugin folder to your QGIS plugins directory:
    - **Windows**: `C:\Users\{username}\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins\`
    - **macOS**: `~/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/`
    - **Linux**: `~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/`
-
-2. Rename the folder to `mappedin_mvf_importer`
-
-3. Open QGIS and go to **Plugins → Manage and Install Plugins → Installed**
-
-4. Find "Mappedin MVF Importer" and enable it
-
-### Option 2: Development Installation
-
-If you're developing or testing the plugin:
-
-1. Clone or download this repository
-2. Compile the resources: `make compile`
-3. Deploy to QGIS: `make deploy`
+3. Restart QGIS
+4. Enable the plugin in **Plugins** → **Manage and Install Plugins**
 
 ## Usage
 
-1. **Open the Import Dialog**:
-   - Go to **Vector → Mappedin MVF Importer → Import Mappedin MVF Package**
-   - Or click the Mappedin icon in the toolbar
+### File Import
+1. Open QGIS
+2. Go to **Plugins** → **Mappedin MVF Importer**
+3. Select **Import from File**
+4. Click **Browse** to select your MVF ZIP file
+5. Click **Import** - layers will be automatically organized and styled
 
-2. **Select MVF v3 Package**:
-   - Click "Browse..." to select your MVF package file
-   - Supported format: `.zip` (MVF v3 package)
+### API Import
+1. Open QGIS
+2. Go to **Plugins** → **Mappedin MVF Importer**
+3. Select **Import from API**
+4. Enter your **API Key** (starts with `mik_`)
+5. Enter your **API Secret** (starts with `mis_`)
+6. Click **Fetch Venues** to load available venues
+7. Select a venue from the dropdown
+8. Click **Import** - MVF will be downloaded and processed automatically
 
-3. **Configure Import Options**:
-   - **Import floor plans**: Import building floor polygons
-   - **Import points of interest (POIs)**: Import POI point features
-   - **Organize layers by floor**: Group layers by floor level
+### Layer Organization
+The plugin creates a comprehensive layer structure:
 
-4. **Import**: Click "OK" to import the data
-
-## MVF Package Format Support
-
-Limitations and notes:
-- MultiPoint/MultiLineString/MultiPolygon are supported for geometry conversion, but some advanced ring handling may be refined in future versions.
-- Locations with multiple geometry anchors will generate a feature per anchor (so multi-floor or multi-geometry associations work).
-- Generic extension ingestion is intentionally conservative to avoid importing low-level nodes; only simple FeatureCollections are added.
-
-The plugin supports various MVF package formats:
-
-### ZIP-based MVF Packages
-- `venue.json`: Venue metadata
-- `floors/*.json`: Floor plan data
-- `pois/*.json`: Points of interest data
-
-### Single JSON Files
-Expected structure:
-```json
-{
-  "venue": { ... },
-  "floors": [ ... ],
-  "pois": [ ... ]
-}
+```
+📁 {Venue Name}
+├── 📁 Level 1 Group (visible by default)
+│   ├── 📍 Level 1 - Locations
+│   ├── 🚪 Level 1 - Doors (white lines)
+│   ├── 🪟 Level 1 - Windows (blue lines)  
+│   ├── 🧱 Level 1 - Walls (grey lines)
+│   ├── ⬆️ Level 1 - Connections (green arrows)
+│   └── 🏠 Level 1 - Spaces (polygons)
+├── 📁 Level 2 Group (hidden by default)
+│   └── ... (same structure)
+└── 📐 Floor Boundaries (hidden by default)
 ```
 
-### Supported Geometry Formats
-- GeoJSON-style coordinates
-- Simple coordinate arrays
-- Point objects with x/y properties
+### Multi-Floor Management
+- **Ground floor** (Level 1) is visible by default
+- **Upper floors** are automatically hidden to prevent overlap
+- **Toggle visibility** using checkboxes in the Layers Panel
+- **Floor boundaries** are hidden by default but available for reference
 
-## Development
+## API Configuration
 
-### Requirements
-- QGIS 3.0+
-- Python 3.6+
-- PyQt5
+### Getting API Credentials
+1. Sign in to your [Mappedin account](https://app.mappedin.com)
+2. Navigate to **Developer** → **API Keys**
+3. Create a new API key/secret pair
+4. Copy the generated credentials
 
-### Building
-```bash
-# Compile resources
-make compile
+### Token Management
+- **Automatic Caching**: Tokens are cached for 2 hours to avoid repeated authentication
+- **Secure Storage**: Credentials are saved locally using QGIS settings
+- **Auto-Refresh**: Expired tokens are automatically refreshed when needed
 
-# Run tests
-make test
+## MVF v3 Format Support
 
-# Clean generated files
-make clean
+This plugin supports the full [Mappedin MVF v3 specification](https://developer.mappedin.com/docs/mvf/v3/mvf-v3-specification/mvf-overview):
 
-# Deploy to QGIS
-make deploy
-
-# Create distribution package
-make package
-```
-
-### File Structure
-```
-mappedin_mvf_importer/
-├── __init__.py                          # Plugin initialization
-├── mappedin_mvf_importer.py            # Main plugin class
-├── mappedin_mvf_importer_dialog.py     # Import dialog
-├── mappedin_mvf_importer_dialog_base.ui # UI layout
-├── mvf_parser_v3.py                    # MVF v3 parsing logic
-├── resources.py                        # Compiled resources
-├── resources.qrc                       # Resource definitions
-├── metadata.txt                        # Plugin metadata
-├── logowhite.png                       # Plugin icon
-├── Makefile                            # Build configuration
-└── README.md                           # Documentation
-```
-
-## Customization
-
-### Adding New MVF Data Types
-
-To support additional MVF data types, modify `mvf_parser_v3.py`.
-
-### Modifying the UI
-
-The import dialog can be customized by editing:
-- `mappedin_mvf_importer_dialog_base.ui` - UI layout
-- `mappedin_mvf_importer_dialog.py` - Dialog behavior
+- **Core Extension**: Manifest, floors, geometry
+- **Locations Extension**: Points of interest, categories
+- **Navigation Data**: Connections, pathways, accessibility
+- **Spatial Relationships**: Floor-to-floor connections
+- **Metadata**: Venue information, floor names, styling
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Plugin not appearing in QGIS**:
-   - Ensure the plugin folder is in the correct location
-   - Check that the folder is named `mappedin_mvf_importer`
-   - Verify the plugin is enabled in the Plugin Manager
+**"No venues available"**
+- Verify your API credentials are correct
+- Ensure your account has access to venues
+- Check your internet connection
 
-2. **Import fails with "Invalid MVF format"**:
-   - Check that your MVF file contains valid JSON
-   - Ensure geometry data is in a supported format
-   - Verify the file is not corrupted
+**"Failed to download MVF package"**
+- Verify the venue ID is correct
+- Ensure you have read permissions for the venue
+- Try refreshing your venues list
 
-3. **Layers not displaying correctly**:
-   - Check the QGIS message log for detailed error information
-   - Verify coordinate reference system settings
-   - Ensure geometry data is valid
+**"Empty layers created"**
+- Some MVF packages may not contain all layer types
+- This is normal - only layers with data are created
+- Check the original MVF package for data completeness
+
+### Debug Information
+
+If you encounter issues:
+1. Open the QGIS **Log Messages Panel** (View → Panels → Log Messages)
+2. Look for messages from the "Mappedin MVF Importer" tab
+3. Include relevant log messages when reporting issues
+
+## Development
+
+### Building from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/mappedin/qgis-plugin.git
+cd qgis-plugin
+
+# Install to QGIS plugins directory
+make dev-deploy
+
+# Clean build artifacts
+make dclean
+```
+
+### Project Structure
+
+```
+mappedin_mvf_importer/
+├── __init__.py                          # Plugin initialization
+├── mappedin_mvf_importer.py            # Main plugin class
+├── mappedin_mvf_importer_dialog.py     # UI dialog
+├── mappedin_mvf_importer_dialog_base.ui # UI layout
+├── mappedin_api.py                     # API client
+├── mvf_parser_v3.py                    # MVF parsing logic
+├── resources.py                        # Qt resources
+├── metadata.txt                        # Plugin metadata
+└── README.md                           # Documentation
+```
+
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Requirements
+
+- **QGIS**: 3.16 or later
+- **Python**: 3.7+
+- **Dependencies**: requests (for API functionality)
 
 ## License
 
-This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
-
-Trademark and Branding Notice: The Mappedin name and logo (`logowhite.png`) are trademarks of Mappedin. They are included solely for identification within this plugin and are not licensed for reuse, redistribution, or modification outside the plugin.
+This project is licensed under the GPL v3 License - see the [LICENSE](LICENSE) file for details.
 
 ## Support
 
-For issues and questions:
-- Check the troubleshooting section above
-- Review QGIS logs for detailed error messages
-- Ensure your MVF package format is compatible
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly with various MVF formats
-5. Submit a pull request
+- **Documentation**: [Mappedin Developer Docs](https://developer.mappedin.com)
+- **Issues**: [GitHub Issues](https://github.com/mappedin/qgis-plugin/issues)
+- **API Support**: [Mappedin Support](https://mappedin.com/support)
 
 ## Changelog
 
-### Version 1.1.0
-- Fixed all QGIS deprecation warnings for future compatibility
-- Improved dialog window management (modal, stays on top)
-- Prevented accidental file reloads by clearing selection after import
-- Removed empty Plugin Dependencies Manager popup on installation
-- Enhanced user experience with professional dialog behavior
-- Updated documentation to reflect current codebase
-
-### Version 1.0.0
-- Initial release
-- Support for MVF v3 ZIP bundles
-- Floor plan and POI import
-- Configurable import options
-- QGIS 3.x compatibility
+### v1.0.0
+- Initial release with MVF v3 support
+- File and API import methods
+- Intelligent layer organization and styling
+- Multi-floor visibility management
+- Token caching and API authentication
+- Door/window/wall categorization
+- Navigation point filtering

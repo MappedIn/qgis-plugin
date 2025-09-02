@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>500</width>
-    <height>300</height>
+    <height>500</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -34,7 +34,7 @@
    <item>
     <widget class="QLabel" name="description_label">
      <property name="text">
-      <string>Select a Mappedin MVF package file to import indoor mapping data into QGIS.</string>
+      <string>Import Mappedin MVF data either from a local file or directly from the Mappedin API.</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -52,10 +52,36 @@
      <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
-       <height>20</height>
+       <height>10</height>
       </size>
      </property>
     </spacer>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="import_method_group">
+     <property name="title">
+      <string>Import Method</string>
+     </property>
+     <layout class="QVBoxLayout" name="method_layout">
+      <item>
+       <widget class="QRadioButton" name="file_import_radio">
+        <property name="text">
+         <string>Import from ZIP file</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="api_import_radio">
+        <property name="text">
+         <string>Import from Mappedin API</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
     <widget class="QGroupBox" name="file_selection_group">
@@ -90,6 +116,76 @@
           <width>80</width>
           <height>16777215</height>
          </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="api_selection_group">
+     <property name="title">
+      <string>Mappedin API Configuration</string>
+     </property>
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <layout class="QGridLayout" name="api_gridLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="api_key_label">
+        <property name="text">
+         <string>API Key:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="api_key_edit">
+        <property name="placeholderText">
+         <string>Enter your Mappedin API key (mik_...)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="api_secret_label">
+        <property name="text">
+         <string>API Secret:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="api_secret_edit">
+        <property name="placeholderText">
+         <string>Enter your Mappedin API secret (mis_...)</string>
+        </property>
+        <property name="echoMode">
+         <enum>QLineEdit::Password</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="venue_label">
+        <property name="text">
+         <string>Venue:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="venue_combo">
+        <property name="editable">
+         <bool>true</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Select a venue or enter venue ID manually</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QPushButton" name="fetch_venues_button">
+        <property name="text">
+         <string>Fetch Available Venues</string>
+        </property>
+        <property name="enabled">
+         <bool>false</bool>
         </property>
        </widget>
       </item>
