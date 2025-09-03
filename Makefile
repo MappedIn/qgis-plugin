@@ -25,18 +25,22 @@
 SOURCES = \
 	__init__.py \
 	mappedin_mvf_importer.py \
-	mappedin_mvf_importer_dialog.py 
+	mappedin_mvf_importer_dialog.py \
+	mappedin_api.py \
+	mvf_parser_v3.py
 
 PLUGINNAME = mappedin_mvf_importer
 
 PY_FILES = \
 	__init__.py \
 	mappedin_mvf_importer.py \
-	mappedin_mvf_importer_dialog.py 
+	mappedin_mvf_importer_dialog.py \
+	mappedin_api.py \
+	mvf_parser_v3.py
 
 UI_FILES = mappedin_mvf_importer_dialog_base.ui
 
-EXTRAS = metadata.txt icon.png
+EXTRAS = metadata.txt logowhite.png LICENSE README.md
 
 COMPILED_RESOURCE_FILES = resources.py
 
@@ -45,6 +49,9 @@ PEP8EXCLUDE=pydev,resources.py,conf.py,third_party,ui
 #################################################
 # Normally you would not need to edit below here
 #################################################
+
+# QGIS 3 plugin directory (adjust if your QGIS profile location is different)
+QGISDIR=Library/Application\ Support/QGIS/QGIS3/profiles/default
 
 HELP = help/build/html
 
@@ -112,21 +119,36 @@ clean:
 	@echo "------------------------------------"
 	$(RM) $(COMPILED_RESOURCE_FILES) $(COMPILED_UI_FILES) $(COMPILED_FORM_FILES)
 
-deploy: compile doc transcompile
+deploy: compile
 	@echo
 	@echo "------------------------------------------"
-	@echo "Deploying plugin to your .qgis2 directory."
+	@echo "Deploying plugin to your QGIS 3 directory."
 	@echo "------------------------------------------"
-	# The deploy  target only works on unix like operating system where
+	@echo "Target: $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)"
+	# The deploy target works on unix like operating systems where
 	# the Python plugin directory is located at:
 	# $HOME/$(QGISDIR)/python/plugins
 	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vf $(PY_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vf $(UI_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vf $(COMPILED_RESOURCE_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vf $(EXTRAS) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vfr i18n $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vfr $(HELP) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/help
+	cp -vf $(PY_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/
+	cp -vf $(UI_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/
+	cp -vf $(COMPILED_RESOURCE_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/
+	cp -vf $(EXTRAS) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/
+	@if [ -d "i18n" ]; then cp -vfr i18n $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/; fi
+	@if [ -d "$(HELP)" ]; then cp -vfr $(HELP) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/help; fi
+	@echo "Plugin deployed successfully!"
+	@echo "Restart QGIS to see your changes."
+
+dev-deploy: compile
+	@echo
+	@echo "---------------------------------------"
+	@echo "Quick development deployment to QGIS 3"
+	@echo "---------------------------------------"
+	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
+	cp -f $(PY_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/
+	cp -f $(UI_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/
+	cp -f $(COMPILED_RESOURCE_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/
+	cp -f $(EXTRAS) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/
+	@echo "Development files deployed. Restart QGIS to test."
 
 # The dclean target removes compiled python files from plugin directory
 # also deletes any .git entry

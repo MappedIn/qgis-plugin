@@ -52,6 +52,7 @@ class MVFv3Parser:
         self.geometry = {}  # floor_id -> FeatureCollection
         self.locations = None
         self.venue_name = "Unknown Venue"
+        self.kinds = {}  # floor_id -> geometry_id -> kind mapping
         
     def parse_mvf_package(self, file_path: str) -> List[Dict[str, Any]]:
         """
@@ -95,7 +96,16 @@ class MVFv3Parser:
             else:
                 pass
             
-            # 3. Parse geometry files (one per floor)
+            # 3. Parse kinds files (geometry type mappings)
+            kinds_files = [f for f in file_names if f.startswith('kinds/') and f.endswith('.json')]
+            for kinds_file in kinds_files:
+                floor_id = self._extract_floor_id_from_filename(kinds_file)
+                with zip_file.open(kinds_file) as f:
+                    kinds_data = json.load(f)
+                    self.kinds[floor_id] = kinds_data
+
+            
+            # 4. Parse geometry files (one per floor)
             geometry_files = [f for f in file_names if f.startswith('geometry/') and f.endswith('.geojson')]
             for geom_file in geometry_files:
                 floor_id = self._extract_floor_id_from_filename(geom_file)
@@ -104,7 +114,7 @@ class MVFv3Parser:
                     self.geometry[floor_id] = geometry_data
                     layers_data.extend(self._process_geometry(floor_id, geometry_data))
             
-            # 4. Parse locations (optional extension) - can be .json or .geojson
+            # 5. Parse locations (optional extension) - can be .json or .geojson
             locations_file = None
             if 'locations.geojson' in file_names:
                 locations_file = 'locations.geojson'
@@ -121,7 +131,7 @@ class MVFv3Parser:
                         self.locations = locations_data
                     layers_data.extend(self._process_locations())
             
-            # 5. Look for other extensions
+            # 6. Look for other extensions
             for extension_file in file_names:
                 if extension_file.endswith('.geojson') and extension_file not in [
                     'manifest.geojson', 'floors.geojson', 'locations.geojson'
@@ -140,11 +150,18 @@ class MVFv3Parser:
     def _extract_floor_id_from_filename(self, filename: str) -> str:
         """Extract floor ID from geometry filename (e.g., geometry/f_00000001.geojson -> f_00000001)"""
         basename = os.path.basename(filename)
-        return basename.replace('.geojson', '')
+        floor_id = basename.replace('.geojson', '').replace('.json', '')
+
+        return floor_id
     
     def _process_floors(self) -> List[Dict[str, Any]]:
         """Process floors.geojson - creates floor boundary polygons"""
         if not self.floors or 'features' not in self.floors:
+            # DEBUG: print("Skipping floor boundaries processing - no floor data found")
+            return []
+        
+        if not self.floors['features']:
+            # DEBUG: print("Skipping floor boundaries processing - empty floor features list")
             return []
         
         features = []
@@ -168,12 +185,15 @@ class MVFv3Parser:
                 features.append(feature_data)
         
         if features:
+
             return [{
                 'name': f'{self.venue_name} - Floor Boundaries',
                 'type': 'polygon',
                 'features': features,
                 'fields': self._get_floor_fields()
             }]
+        else:
+
         
         return []
     
@@ -182,10 +202,32 @@ class MVFv3Parser:
         if not geometry_data or 'features' not in geometry_data:
             return []
         
-        # Group geometry by type
+        # Check if we have any valid features at all
+        if not geometry_data['features']:
+            return []
+        
+        # Group geometry by type AND by kind (doors, windows, walls, etc.)
         polygons = []
         lines = []
         points = []
+        doors = []
+        windows = []
+        walls = []
+        
+        # Counters for debugging
+        total_features = len(geometry_data['features'])
+        objects_skipped = 0
+        
+        # Get kinds data for this floor
+        floor_kinds = self.kinds.get(floor_id, {})
+        # DEBUG: print(f"Floor {floor_id}: Found {len(floor_kinds)} kind mappings")
+        
+        # Debug: show what kinds we have
+        if floor_kinds:
+            kind_counts = {}
+            for gid, kind in floor_kinds.items():
+                kind_counts[kind] = kind_counts.get(kind, 0) + 1
+            # DEBUG: print(f"Kind distribution: {kind_counts}")
         
         for geom_feature in geometry_data['features']:
             geometry = self._convert_geojson_geometry(geom_feature.get('geometry'))
@@ -194,37 +236,140 @@ class MVFv3Parser:
                 
             properties = geom_feature.get('properties', {})
             details = properties.get('details', {})
+            geom_id = properties.get('id', '')
+            
+            # Get the kind/type of this geometry
+            geom_kind = floor_kinds.get(geom_id, 'unknown')
+            
+            # Debug: show some examples of kind mapping
+            if len(doors) + len(windows) + len(walls) < 5:  # Only show first few
+                # DEBUG: print(f"Geometry {geom_id}: kind='{geom_kind}', geom_type={geometry.type()}")
             
             feature_data = {
                 'geometry': geometry,
                 'attributes': {
-                    'geometry_id': properties.get('id', ''),
+                    'geometry_id': geom_id,
                     'floor_id': floor_id,
                     'name': details.get('name', ''),
                     'description': details.get('description', ''),
                     'external_id': details.get('externalId', ''),
-                    'icon': details.get('icon', '')
+                    'icon': details.get('icon', ''),
+                    'kind': geom_kind  # Add the kind information
                 }
             }
             
             geom_type = geometry.type()
-            geom_type_name = geometry.wkbType()
             
-            # Debug geometry types
-            geom_id = properties.get('id', 'unknown')
+            # Skip objects entirely - they clutter the visualization
+            kind_lower = geom_kind.lower()
+            if 'object' in kind_lower:
+                objects_skipped += 1
+                continue
             
-            if geom_type == QgsWkbTypes.PolygonGeometry:
-                polygons.append(feature_data)
-            elif geom_type == QgsWkbTypes.LineGeometry:
-                lines.append(feature_data)
-            elif geom_type == QgsWkbTypes.PointGeometry:
-                points.append(feature_data)
+            # Categorize by kind first, then by geometry type
+            if ('door' in kind_lower or 'entrance' in kind_lower or 
+                'entry' in kind_lower or 'exit' in kind_lower):
+                doors.append(feature_data)
+                if len(doors) <= 3:  # Debug first few
+                    # DEBUG: print(f"  -> Added to DOORS: {geom_id} (kind: {geom_kind})")
+            elif 'window' in kind_lower:
+                windows.append(feature_data)
+                if len(windows) <= 3:  # Debug first few
+                    # DEBUG: print(f"  -> Added to WINDOWS: {geom_id} (kind: {geom_kind})")
+            elif 'wall' in kind_lower:
+                walls.append(feature_data)
+                if len(walls) <= 3:  # Debug first few
+                    # DEBUG: print(f"  -> Added to WALLS: {geom_id} (kind: {geom_kind})")
             else:
-                pass
+                # Fallback to geometry type for other features (but only specific types for connections)
+                if geom_type == QgsWkbTypes.PolygonGeometry:
+                    # Only add non-object polygons
+                    if 'object' not in kind_lower:
+                        polygons.append(feature_data)
+                    else:
+                        if len(polygons) < 3:  # Debug what we're filtering
+                            # DEBUG: print(f"  -> SKIPPED POLYGON OBJECT: {geom_id} (kind: {geom_kind})")
+                elif geom_type == QgsWkbTypes.LineGeometry:
+                    # Only add non-object lines
+                    if 'object' not in kind_lower:
+                        lines.append(feature_data)
+                        if len(lines) <= 3:  # Debug first few lines
+                            # DEBUG: print(f"  -> Added to LINES: {geom_id} (kind: {geom_kind})")
+                    else:
+                        if len(lines) < 3:  # Debug what we're filtering
+                            # DEBUG: print(f"  -> SKIPPED LINE OBJECT: {geom_id} (kind: {geom_kind})")
+                elif geom_type == QgsWkbTypes.PointGeometry:
+                    # Skip door navigation points (API MVF creates -p1, -p2 points for doors)
+                    is_door_navigation_point = ('-p1' in geom_id or '-p2' in geom_id)
+                    
+                    if is_door_navigation_point:
+                        # DEBUG: print(f"  -> SKIPPED DOOR NAVIGATION POINT: {geom_id} (kind: {geom_kind}) - API door connection point")
+                        continue
+                    
+                    # Add specific connection types OR unknown points (for backwards compatibility)
+                    is_known_connection = ('stair' in kind_lower or 'elevator' in kind_lower or 
+                                         'escalator' in kind_lower or 'lift' in kind_lower or
+                                         'stairs' in kind_lower or 'elevators' in kind_lower)
+                    is_unknown_point = (geom_kind == 'unknown' or 'poi' in kind_lower)
+                    
+                    if is_known_connection or is_unknown_point:
+                        points.append(feature_data)
+                        if len(points) <= 3:  # Debug first few points
+                            connection_type = "known connection" if is_known_connection else "unknown/poi point"
+                            # DEBUG: print(f"  -> Added to CONNECTIONS: {geom_id} (kind: {geom_kind}) - {connection_type}")
+                    else:
+                        if len(points) < 3:  # Debug what we're skipping
+                            # DEBUG: print(f"  -> SKIPPED POINT: {geom_id} (kind: {geom_kind}) - filtered out")
+                else:
+                    pass
+        
+        # Debug summary
+        processed_features = len(doors) + len(windows) + len(walls) + len(polygons) + len(lines) + len(points)
+        # DEBUG: print(f"Processing summary: {total_features} total -> {objects_skipped} objects skipped -> {processed_features} features processed")
         
         layers = []
         floor_name = self._get_floor_name(floor_id)
         
+        # Create doors layer (red, thick lines)
+        if doors:
+            layers.append({
+                'name': f'{floor_name} - Doors',
+                'type': 'linestring',
+                'features': doors,
+                'fields': self._get_geometry_fields(),
+                'style_type': 'door'
+            })
+            # DEBUG: print(f"Created Doors layer for {floor_name} with {len(doors)} features")
+        else:
+            # DEBUG: print(f"Skipping empty Doors layer for {floor_name}")
+        
+        # Create windows layer (blue, thick lines)
+        if windows:
+            layers.append({
+                'name': f'{floor_name} - Windows',
+                'type': 'linestring',
+                'features': windows,
+                'fields': self._get_geometry_fields(),
+                'style_type': 'window'
+            })
+            # DEBUG: print(f"Created Windows layer for {floor_name} with {len(windows)} features")
+        else:
+            # DEBUG: print(f"Skipping empty Windows layer for {floor_name}")
+        
+        # Create walls layer (dark grey, normal lines)
+        if walls:
+            layers.append({
+                'name': f'{floor_name} - Walls',
+                'type': 'linestring',
+                'features': walls,
+                'fields': self._get_geometry_fields(),
+                'style_type': 'wall'
+            })
+            # DEBUG: print(f"Created Walls layer for {floor_name} with {len(walls)} features")
+        else:
+            # DEBUG: print(f"Skipping empty Walls layer for {floor_name}")
+        
+        # Only create layers if they have actual features
         if polygons:
             layers.append({
                 'name': f'{floor_name} - Spaces',
@@ -232,14 +377,21 @@ class MVFv3Parser:
                 'features': polygons,
                 'fields': self._get_geometry_fields()
             })
+            # DEBUG: print(f"Created Spaces layer for {floor_name} with {len(polygons)} features")
+        else:
+            # DEBUG: print(f"Skipping empty Spaces layer for {floor_name}")
         
         if lines:
             layers.append({
-                'name': f'{floor_name} - Lines',
+                'name': f'{floor_name} - Doors',
                 'type': 'linestring',
                 'features': lines,
-                'fields': self._get_geometry_fields()
+                'fields': self._get_geometry_fields(),
+                'style_type': 'line_doors'
             })
+            # DEBUG: print(f"Created Doors layer for {floor_name} with {len(lines)} features")
+        else:
+            # DEBUG: print(f"Skipping empty Doors layer for {floor_name}")
         
         if points:
             layers.append({
@@ -248,12 +400,16 @@ class MVFv3Parser:
                 'features': points,
                 'fields': self._get_geometry_fields()
             })
+            # DEBUG: print(f"Created Connections layer for {floor_name} with {len(points)} features")
+        else:
+            # DEBUG: print(f"Skipping empty Connections layer for {floor_name}")
         
         return layers
     
     def _process_locations(self) -> List[Dict[str, Any]]:
         """Process locations.json/geojson - POIs and places of interest"""
         if not self.locations:
+            # DEBUG: print("Skipping locations processing - no location data found")
             return []
         
         # Handle both list and FeatureCollection formats
@@ -264,6 +420,10 @@ class MVFv3Parser:
             location_list = self.locations
         else:
             location_list = [self.locations]
+        
+        if not location_list:
+            # DEBUG: print("Skipping locations processing - empty location list")
+            return []
         
         features = []
         processed_count = 0
@@ -326,9 +486,8 @@ class MVFv3Parser:
                 }
                 features.append(feature_data)
         
-        
-        
         if not features:
+            # DEBUG: print(f"Skipping locations processing - no valid location features found (processed {processed_count} locations)")
             return []
         
         # Group locations by floor for separate layers
@@ -351,6 +510,7 @@ class MVFv3Parser:
                 'features': floor_features,
                 'fields': self._get_location_fields()
             })
+            # DEBUG: print(f"Created Locations layer for {floor_name} with {len(floor_features)} features")
             
         
         return location_layers
@@ -448,6 +608,71 @@ class MVFv3Parser:
             })
             layer.setRenderer(QgsSingleSymbolRenderer(symbol))
             layer.setOpacity(1.0)
+        except Exception:
+            pass
+
+    def _configure_door_layer_styling(self, layer: QgsVectorLayer):
+        """White styling for door layers."""
+        try:
+            symbol = QgsLineSymbol.createSimple({
+                'color': '#FFFFFF',  # white
+                'width': '1.4',      # custom width
+                'capstyle': 'round',
+                'joinstyle': 'round'
+            })
+            layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+        except Exception:
+            pass
+
+    def _configure_window_layer_styling(self, layer: QgsVectorLayer):
+        """Blue styling for window layers."""
+        try:
+            symbol = QgsLineSymbol.createSimple({
+                'color': '#0066FF',  # bright blue
+                'width': '1.2',      # updated width
+                'capstyle': 'round',
+                'joinstyle': 'round'
+            })
+            layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+        except Exception:
+            pass
+
+    def _configure_wall_layer_styling(self, layer: QgsVectorLayer):
+        """Dark grey styling for wall layers."""
+        try:
+            symbol = QgsLineSymbol.createSimple({
+                'color': '#333333',  # dark grey
+                'width': '0.8',
+                'capstyle': 'round',
+                'joinstyle': 'round'
+            })
+            layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+        except Exception:
+            pass
+
+    def _configure_connections_layer_styling(self, layer: QgsVectorLayer):
+        """Green arrow styling for connections layer."""
+        try:
+            symbol = QgsMarkerSymbol.createSimple({
+                'name': 'arrow',
+                'color': '#47d200',  # bright green
+                'outline_width': '0',  # no outline
+                'size': '4'  # size 4
+            })
+            layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+        except Exception:
+            pass
+
+    def _configure_line_doors_layer_styling(self, layer: QgsVectorLayer):
+        """White styling for line doors layer."""
+        try:
+            symbol = QgsLineSymbol.createSimple({
+                'color': '#FFFFFF',  # white
+                'width': '1.4',      # same as door width
+                'capstyle': 'round',
+                'joinstyle': 'round'
+            })
+            layer.setRenderer(QgsSingleSymbolRenderer(symbol))
         except Exception:
             pass
     
@@ -593,6 +818,7 @@ class MVFv3Parser:
         fields.append(QgsField('description', QMetaType.QString))
         fields.append(QgsField('external_id', QMetaType.QString))
         fields.append(QgsField('icon', QMetaType.QString))
+        fields.append(QgsField('kind', QMetaType.QString))  # Add kind field
         return fields
     
     def _get_location_fields(self) -> QgsFields:
@@ -739,16 +965,33 @@ class MVFv3Parser:
             layer.reload()
             layer.triggerRepaint()
             
-            # Configure styling and labeling for location layers
-            if 'Locations' in layer_info.get('name', ''):
+            # Configure styling based on layer type
+            layer_name = layer_info.get('name', '')
+            style_type = layer_info.get('style_type', '')
+            
+            if 'Locations' in layer_name:
                 self._configure_location_layer_styling(layer)
                 self._configure_location_labels(layer)
-                # Additional refresh for locations after styling
                 layer.triggerRepaint()
-            elif 'Lines' in layer_info.get('name', ''):
+            elif style_type == 'door':
+                self._configure_door_layer_styling(layer)
+                layer.triggerRepaint()
+            elif style_type == 'window':
+                self._configure_window_layer_styling(layer)
+                layer.triggerRepaint()
+            elif style_type == 'wall':
+                self._configure_wall_layer_styling(layer)
+                layer.triggerRepaint()
+            elif style_type == 'line_doors':
+                self._configure_line_doors_layer_styling(layer)
+                layer.triggerRepaint()
+            elif 'Connections' in layer_name:
+                self._configure_connections_layer_styling(layer)
+                layer.triggerRepaint()
+            elif 'Lines' in layer_name:
                 self._configure_line_layer_styling(layer)
                 layer.triggerRepaint()
-            elif 'Spaces' in layer_info.get('name', ''):
+            elif 'Spaces' in layer_name:
                 self._configure_space_layer_styling(layer)
                 layer.triggerRepaint()
             
