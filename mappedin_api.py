@@ -143,6 +143,7 @@ class MappedInAPIClient:
         
         if not is_valid:
             # DEBUG: print(f"Cached token expired: age={token_age/60:.1f}min, limit={safe_lifetime/60:.1f}min")
+            pass
         
         return is_valid
     
@@ -167,6 +168,7 @@ class MappedInAPIClient:
         success, error = self.authenticate(self._api_key, self._api_secret)
         if success:
             # DEBUG: print("Token refreshed successfully")
+            pass
         else:
             print(f"Token refresh failed: {error}")
         return success
@@ -221,6 +223,7 @@ class MappedInAPIClient:
                 error_details = response.json()
                 print(f"  Error details: {error_details}")
             except:
+                pass
                 # DEBUG: print(f"  Response text: {response.text}")
             # DEBUG: print(f"  Request headers: {kwargs.get('headers', {})}")
             
@@ -244,6 +247,7 @@ class MappedInAPIClient:
                 kwargs['headers'] = headers
                 response = getattr(requests, method.lower())(url, **kwargs)
                 if response.status_code == 401:
+                    pass
                     # DEBUG: print("Still getting 401 after fresh token - authentication issue")
         
         return response
@@ -470,6 +474,7 @@ class MappedInAPIClient:
                 if not auth_success:
                     return False, f"Authentication failed: {auth_error}", None, None
             else:
+                pass
                 # DEBUG: print("Using cached token for MVF download")
             
             # Step 2: Get download URL

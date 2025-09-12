@@ -435,13 +435,14 @@ class MappedInMVFImporter:
             for floor_key, group in floor_groups_created:
                 if group == ground_floor_group:
                     # DEBUG: print(f"  Keeping {floor_key} visible (ground floor)")
-                    # group.setItemVisibilityChecked(True)  # Already visible by default
+                    pass  # Already visible by default
                 else:
                     group.setItemVisibilityChecked(False)
                     # DEBUG: print(f"  Hiding {floor_key} (upper floor)")
                     
         elif len(floor_groups_created) == 1:
             # DEBUG: print("Single floor detected, keeping it visible")
+            pass  # Single floor is visible by default
         
         # Set canvas extent and refresh
         if layers_data:

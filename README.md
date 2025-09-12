@@ -205,11 +205,18 @@ This project is licensed under the GPL v3 License - see the [LICENSE](LICENSE) f
 
 ## Changelog
 
+### v2.0.1 (Latest)
+- **🎨 Logo Update**: Updated plugin logo for better visual consistency
+
+### v2.0.0
+- **🚀 Dual Import Methods**: File import + direct API download with token caching
+- **🏗️ Smart Layer Organization**: Floor-based grouping with automatic visibility management
+- **🎨 Intelligent Styling**: Separate layers for doors (white), windows (blue), walls (grey), connections (green arrows)
+- **🔧 Advanced Features**: Token caching, door navigation filtering, empty layer prevention
+- **📱 UX Improvements**: User-friendly venue selection, comprehensive error handling
+- **📚 Production Ready**: Debug logging removed, comprehensive documentation
+
 ### v1.0.0
-- Initial release with MVF v3 support
-- File and API import methods
-- Intelligent layer organization and styling
-- Multi-floor visibility management
-- Token caching and API authentication
-- Door/window/wall categorization
-- Navigation point filtering
+- Initial release with basic MVF v3 support
+- File import functionality
+- Basic layer creation

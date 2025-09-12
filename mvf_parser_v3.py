@@ -193,7 +193,7 @@ class MVFv3Parser:
                 'fields': self._get_floor_fields()
             }]
         else:
-
+            pass
         
         return []
     
@@ -244,6 +244,7 @@ class MVFv3Parser:
             # Debug: show some examples of kind mapping
             if len(doors) + len(windows) + len(walls) < 5:  # Only show first few
                 # DEBUG: print(f"Geometry {geom_id}: kind='{geom_kind}', geom_type={geometry.type()}")
+                pass
             
             feature_data = {
                 'geometry': geometry,
@@ -272,14 +273,17 @@ class MVFv3Parser:
                 doors.append(feature_data)
                 if len(doors) <= 3:  # Debug first few
                     # DEBUG: print(f"  -> Added to DOORS: {geom_id} (kind: {geom_kind})")
+                    pass
             elif 'window' in kind_lower:
                 windows.append(feature_data)
                 if len(windows) <= 3:  # Debug first few
                     # DEBUG: print(f"  -> Added to WINDOWS: {geom_id} (kind: {geom_kind})")
+                    pass
             elif 'wall' in kind_lower:
                 walls.append(feature_data)
                 if len(walls) <= 3:  # Debug first few
                     # DEBUG: print(f"  -> Added to WALLS: {geom_id} (kind: {geom_kind})")
+                    pass
             else:
                 # Fallback to geometry type for other features (but only specific types for connections)
                 if geom_type == QgsWkbTypes.PolygonGeometry:
@@ -289,21 +293,25 @@ class MVFv3Parser:
                     else:
                         if len(polygons) < 3:  # Debug what we're filtering
                             # DEBUG: print(f"  -> SKIPPED POLYGON OBJECT: {geom_id} (kind: {geom_kind})")
+                            pass
                 elif geom_type == QgsWkbTypes.LineGeometry:
                     # Only add non-object lines
                     if 'object' not in kind_lower:
                         lines.append(feature_data)
                         if len(lines) <= 3:  # Debug first few lines
                             # DEBUG: print(f"  -> Added to LINES: {geom_id} (kind: {geom_kind})")
+                            pass
                     else:
                         if len(lines) < 3:  # Debug what we're filtering
                             # DEBUG: print(f"  -> SKIPPED LINE OBJECT: {geom_id} (kind: {geom_kind})")
+                            pass
                 elif geom_type == QgsWkbTypes.PointGeometry:
                     # Skip door navigation points (API MVF creates -p1, -p2 points for doors)
                     is_door_navigation_point = ('-p1' in geom_id or '-p2' in geom_id)
                     
                     if is_door_navigation_point:
                         # DEBUG: print(f"  -> SKIPPED DOOR NAVIGATION POINT: {geom_id} (kind: {geom_kind}) - API door connection point")
+                        pass
                         continue
                     
                     # Add specific connection types OR unknown points (for backwards compatibility)
@@ -317,9 +325,11 @@ class MVFv3Parser:
                         if len(points) <= 3:  # Debug first few points
                             connection_type = "known connection" if is_known_connection else "unknown/poi point"
                             # DEBUG: print(f"  -> Added to CONNECTIONS: {geom_id} (kind: {geom_kind}) - {connection_type}")
+                            pass
                     else:
                         if len(points) < 3:  # Debug what we're skipping
                             # DEBUG: print(f"  -> SKIPPED POINT: {geom_id} (kind: {geom_kind}) - filtered out")
+                            pass
                 else:
                     pass
         
@@ -341,6 +351,7 @@ class MVFv3Parser:
             })
             # DEBUG: print(f"Created Doors layer for {floor_name} with {len(doors)} features")
         else:
+            pass
             # DEBUG: print(f"Skipping empty Doors layer for {floor_name}")
         
         # Create windows layer (blue, thick lines)
@@ -354,6 +365,7 @@ class MVFv3Parser:
             })
             # DEBUG: print(f"Created Windows layer for {floor_name} with {len(windows)} features")
         else:
+            pass
             # DEBUG: print(f"Skipping empty Windows layer for {floor_name}")
         
         # Create walls layer (dark grey, normal lines)
@@ -367,6 +379,7 @@ class MVFv3Parser:
             })
             # DEBUG: print(f"Created Walls layer for {floor_name} with {len(walls)} features")
         else:
+            pass
             # DEBUG: print(f"Skipping empty Walls layer for {floor_name}")
         
         # Only create layers if they have actual features
@@ -379,6 +392,7 @@ class MVFv3Parser:
             })
             # DEBUG: print(f"Created Spaces layer for {floor_name} with {len(polygons)} features")
         else:
+            pass
             # DEBUG: print(f"Skipping empty Spaces layer for {floor_name}")
         
         if lines:
@@ -391,6 +405,7 @@ class MVFv3Parser:
             })
             # DEBUG: print(f"Created Doors layer for {floor_name} with {len(lines)} features")
         else:
+            pass
             # DEBUG: print(f"Skipping empty Doors layer for {floor_name}")
         
         if points:
@@ -402,6 +417,7 @@ class MVFv3Parser:
             })
             # DEBUG: print(f"Created Connections layer for {floor_name} with {len(points)} features")
         else:
+            pass
             # DEBUG: print(f"Skipping empty Connections layer for {floor_name}")
         
         return layers
