@@ -31,4 +31,5 @@ def classFactory(iface):  # pylint: disable=invalid-name
     """
     #
     from mappedin_mvf_importer.mappedin_mvf_importer import MappedInMVFImporter
+
     return MappedInMVFImporter(iface)

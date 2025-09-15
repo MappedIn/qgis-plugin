@@ -19,13 +19,15 @@
  *                                                                         *
  ***************************************************************************/
 """
+
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl
 from qgis.PyQt.QtGui import QIcon, QPixmap
-from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox
-from qgis.core import QgsProject, QgsLayerTreeGroup, QgsLayerTreeLayer, QgsRasterLayer, QgsDataSourceUri
+from qgis.PyQt.QtWidgets import QAction, QMessageBox
+from qgis.core import QgsProject, QgsRasterLayer, QgsDataSourceUri
 
 # Initialize Qt resources from file resources.py
-from mappedin_mvf_importer.resources import *
+from mappedin_mvf_importer.resources import *  # noqa: F403
+
 # Import the code for the dialog
 from mappedin_mvf_importer.mappedin_mvf_importer_dialog import MappedInMVFImporterDialog
 from mappedin_mvf_importer.mvf_parser_v3 import MVFv3Parser
@@ -48,11 +50,10 @@ class MappedInMVFImporter:
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
         # initialize locale
-        locale = QSettings().value('locale/userLocale')[0:2]
+        locale = QSettings().value("locale/userLocale")[0:2]
         locale_path = os.path.join(
-            self.plugin_dir,
-            'i18n',
-            'MappedInMVFImporter_{}.qm'.format(locale))
+            self.plugin_dir, "i18n", "MappedInMVFImporter_{}.qm".format(locale)
+        )
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -61,12 +62,11 @@ class MappedInMVFImporter:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&Mappedin MVF Importer')
+        self.menu = self.tr("&Mappedin MVF Importer")
 
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
         self.first_start = None
-        
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -81,12 +81,11 @@ class MappedInMVFImporter:
         :rtype: QString
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QCoreApplication.translate('MappedInMVFImporter', message)
-
+        return QCoreApplication.translate("MappedInMVFImporter", message)
 
     def _get_plugin_icon(self) -> QIcon:
         """Return the plugin icon, trying Qt resource first, then filesystem fallback."""
-        resource_path = ':/plugins/mappedin_mvf_importer/logowhite.png'
+        resource_path = ":/plugins/mappedin_mvf_importer/logowhite.png"
         icon = QIcon()
         # Load pixmap from resource
         pix = QPixmap(resource_path)
@@ -96,7 +95,7 @@ class MappedInMVFImporter:
             icon.addPixmap(pix, QIcon.Disabled, QIcon.Off)
             return icon
         # Fallback to filesystem
-        fs_icon_path = os.path.join(self.plugin_dir, 'logowhite.png')
+        fs_icon_path = os.path.join(self.plugin_dir, "logowhite.png")
         pix = QPixmap(fs_icon_path)
         if not pix.isNull():
             icon.addPixmap(pix, QIcon.Normal, QIcon.Off)
@@ -114,7 +113,8 @@ class MappedInMVFImporter:
         add_to_toolbar=True,
         status_tip=None,
         whats_this=None,
-        parent=None):
+        parent=None,
+    ):
         """Add a toolbar icon to the toolbar.
 
         :param icon_path: Path to the icon for this action. Can be a resource
@@ -169,15 +169,9 @@ class MappedInMVFImporter:
         if add_to_toolbar:
             # Adds plugin icon to Plugins toolbar and ensures icon shows on the button
             self.iface.addToolBarIcon(action)
-            try:
-                toolbar = self.iface.mainWindow().findChild(type(self.iface.addToolBarIcon(action).__class__), None)
-            except Exception:
-                toolbar = None
 
         if add_to_menu:
-            self.iface.addPluginToVectorMenu(
-                self.menu,
-                action)
+            self.iface.addPluginToVectorMenu(self.menu, action)
 
         self.actions.append(action)
 
@@ -186,33 +180,29 @@ class MappedInMVFImporter:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/mappedin_mvf_importer/logowhite.png'
+        icon_path = ":/plugins/mappedin_mvf_importer/logowhite.png"
         self.add_action(
             icon_path,
-            text=self.tr(u'Import Mappedin MVF Package'),
+            text=self.tr("Import Mappedin MVF Package"),
             callback=self.run,
-            parent=self.iface.mainWindow())
+            parent=self.iface.mainWindow(),
+        )
 
         # will be set False in run()
         self.first_start = True
 
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
-            self.iface.removePluginVectorMenu(
-                self.tr(u'&Mappedin MVF Importer'),
-                action)
+            self.iface.removePluginVectorMenu(self.tr("&Mappedin MVF Importer"), action)
             self.iface.removeToolBarIcon(action)
-        
-
 
     def run(self):
         """Run method that performs all the real work"""
 
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        if self.first_start == True:
+        if self.first_start:
             self.first_start = False
             self.dlg = MappedInMVFImporterDialog(parent=self.iface.mainWindow())
 
@@ -225,7 +215,7 @@ class MappedInMVFImporter:
 
         # Clear any previous file selection to prevent accidental reloads
         self.dlg.clear_selection()
-        
+
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
@@ -242,111 +232,107 @@ class MappedInMVFImporter:
         file_path = self.dlg.get_selected_file()
         enable_osm_baselayer = self.dlg.get_osm_baselayer_enabled()
         import_mode = self.dlg.get_import_mode()
-        
+
         if not file_path:
             QMessageBox.warning(
                 self.iface.mainWindow(),
                 "Warning",
-                "Please select an MVF package file or configure API settings."
+                "Please select an MVF package file or configure API settings.",
             )
             return
-        
+
         try:
             # Parse the MVF package
             parser = MVFv3Parser()
             layers_data = parser.parse_mvf_package(file_path)
-            
+
             # Organize layers for proper grouping first
             self._organize_and_add_layers(parser, layers_data)
-            
+
             # Add OSM base layer LAST and force to absolute bottom
             if enable_osm_baselayer:
                 self._add_osm_baselayer()
                 # Extra safety: ensure any OSM layers are positioned at absolute bottom
                 self._ensure_osm_at_bottom()
-            
+
             # Prepare success message
-            if import_mode == 'api':
+            if import_mode == "api":
                 creds = self.dlg.get_api_credentials()
                 success_msg = f"Successfully imported MVF package for venue '{creds['venue_id']}' with {len(layers_data)} layer(s)."
             else:
                 success_msg = f"Successfully imported MVF package with {len(layers_data)} layer(s)."
-                    
-            QMessageBox.information(
-                self.iface.mainWindow(),
-                "Success",
-                success_msg
-            )
-            
+
+            QMessageBox.information(self.iface.mainWindow(), "Success", success_msg)
+
             # Clear the file selection after successful import to prevent accidental reloads
             self.dlg.clear_selection()
-            
+
         except Exception as e:
             QMessageBox.critical(
                 self.iface.mainWindow(),
                 "Error",
-                f"Failed to import MVF package: {str(e)}"
+                f"Failed to import MVF package: {str(e)}",
             )
         finally:
             # Clean up temporary files if using API import
-            if import_mode == 'api':
+            if import_mode == "api":
                 self.dlg.cleanup_temp_files()
-    
+
     def _organize_and_add_layers(self, parser, layers_data):
         """Organize layers into floor groups with proper ordering"""
         project = QgsProject.instance()
         root = project.layerTreeRoot()
-        
+
         # Separate layers by type and floor
         floor_layers = {}
         boundary_layers = []
-        
+
         for layer_info in layers_data:
-            layer_name = layer_info.get('name', '')
-            
-            if 'Floor Boundaries' in layer_name or 'Boundary' in layer_name:
+            layer_name = layer_info.get("name", "")
+
+            if "Floor Boundaries" in layer_name or "Boundary" in layer_name:
                 boundary_layers.append(layer_info)
             else:
                 # Extract floor/level info from layer name
-                if 'Level 1' in layer_name:
-                    floor_key = 'Level 1'
-                elif 'Level 2' in layer_name:
-                    floor_key = 'Level 2'
+                if "Level 1" in layer_name:
+                    floor_key = "Level 1"
+                elif "Level 2" in layer_name:
+                    floor_key = "Level 2"
                 else:
                     # Handle other floors dynamically
-                    parts = layer_name.split(' - ')
+                    parts = layer_name.split(" - ")
                     if len(parts) >= 2:
                         floor_key = parts[0]
                     else:
-                        floor_key = 'Other'
-                
+                        floor_key = "Other"
+
                 if floor_key not in floor_layers:
                     floor_layers[floor_key] = {
-                        'locations': [],
-                        'doors': [],
-                        'windows': [],
-                        'walls': [],
-                        'points': [],
-                        'lines': [],
-                        'spaces': []
+                        "locations": [],
+                        "doors": [],
+                        "windows": [],
+                        "walls": [],
+                        "points": [],
+                        "lines": [],
+                        "spaces": [],
                     }
-                
+
                 # Categorize layer by type
-                if 'Locations' in layer_name:
-                    floor_layers[floor_key]['locations'].append(layer_info)
-                elif 'Doors' in layer_name:
-                    floor_layers[floor_key]['doors'].append(layer_info)
-                elif 'Windows' in layer_name:
-                    floor_layers[floor_key]['windows'].append(layer_info)
-                elif 'Walls' in layer_name:
-                    floor_layers[floor_key]['walls'].append(layer_info)
-                elif 'Connections' in layer_name:
-                    floor_layers[floor_key]['points'].append(layer_info)
-                elif 'Lines' in layer_name or 'Doors' in layer_name:
-                    floor_layers[floor_key]['lines'].append(layer_info)
-                elif 'Spaces' in layer_name:
-                    floor_layers[floor_key]['spaces'].append(layer_info)
-        
+                if "Locations" in layer_name:
+                    floor_layers[floor_key]["locations"].append(layer_info)
+                elif "Doors" in layer_name:
+                    floor_layers[floor_key]["doors"].append(layer_info)
+                elif "Windows" in layer_name:
+                    floor_layers[floor_key]["windows"].append(layer_info)
+                elif "Walls" in layer_name:
+                    floor_layers[floor_key]["walls"].append(layer_info)
+                elif "Connections" in layer_name:
+                    floor_layers[floor_key]["points"].append(layer_info)
+                elif "Lines" in layer_name or "Doors" in layer_name:
+                    floor_layers[floor_key]["lines"].append(layer_info)
+                elif "Spaces" in layer_name:
+                    floor_layers[floor_key]["spaces"].append(layer_info)
+
         # Add boundary layers FIRST so they appear at the bottom of the tree and render behind everything
         for layer_info in boundary_layers:
             layer = parser.create_qgis_layer(layer_info)
@@ -357,40 +343,45 @@ class MappedInMVFImporter:
                 layer_node = root.findLayer(layer.id())
                 if layer_node:
                     layer_node.setItemVisibilityChecked(False)
-        
+
         # Create floor groups in descending order (Level 2, Level 1, etc.) AFTER boundaries
         floor_keys = sorted(floor_layers.keys(), reverse=True)
         floor_groups_created = []  # Track created groups for visibility management
-        
+
         for floor_key in floor_keys:
             floor_data = floor_layers[floor_key]
-            
+
             # Check if this floor has any layers before creating the group
-            total_layers = (len(floor_data['locations']) + len(floor_data['doors']) + 
-                          len(floor_data['windows']) + len(floor_data['walls']) + 
-                          len(floor_data['points']) + len(floor_data['lines']) + 
-                          len(floor_data['spaces']))
-            
+            total_layers = (
+                len(floor_data["locations"])
+                + len(floor_data["doors"])
+                + len(floor_data["windows"])
+                + len(floor_data["walls"])
+                + len(floor_data["points"])
+                + len(floor_data["lines"])
+                + len(floor_data["spaces"])
+            )
+
             if total_layers == 0:
                 # DEBUG: print(f"Skipping empty floor group for {floor_key} - no layers to add")
                 continue
-            
+
             # Create floor group
             group = root.addGroup(f"{floor_key} Group")
             floor_groups_created.append((floor_key, group))
             layers_added = 0
-            
+
             # Add layers in specific order: Locations, Doors, Windows, Walls, Connections, Lines, Spaces
             layer_order = [
-                ('locations', floor_data['locations']),
-                ('doors', floor_data['doors']),
-                ('windows', floor_data['windows']),
-                ('walls', floor_data['walls']),
-                ('connections', floor_data['points']),
-                ('lines', floor_data['lines']),
-                ('spaces', floor_data['spaces'])
+                ("locations", floor_data["locations"]),
+                ("doors", floor_data["doors"]),
+                ("windows", floor_data["windows"]),
+                ("walls", floor_data["walls"]),
+                ("connections", floor_data["points"]),
+                ("lines", floor_data["lines"]),
+                ("spaces", floor_data["spaces"]),
             ]
-            
+
             for layer_type, layer_infos in layer_order:
                 for layer_info in layer_infos:
                     layer = parser.create_qgis_layer(layer_info)
@@ -400,37 +391,43 @@ class MappedInMVFImporter:
                         # Then add to group
                         group.addLayer(layer)
                         layers_added += 1
-            
+
             # If no layers were actually added, remove the empty group
             if layers_added == 0:
                 # DEBUG: print(f"Removing empty floor group for {floor_key} - no valid layers created")
                 root.removeChildNode(group)
                 # Remove from tracking list as well
-                floor_groups_created = [(k, g) for k, g in floor_groups_created if g != group]
-        
+                floor_groups_created = [
+                    (k, g) for k, g in floor_groups_created if g != group
+                ]
+
         # Hide all floor groups except Level 1 (ground floor) for better UX
         if len(floor_groups_created) > 1:
             # DEBUG: print(f"Multiple floors detected ({len(floor_groups_created)}), hiding all except Level 1 (ground floor)")
-            
+
             # Find the ground floor (Level 1 or lowest floor)
             ground_floor_group = None
             ground_floor_key = None
-            
+
             # Look for "Level 1" or similar ground floor indicators
             for floor_key, group in floor_groups_created:
                 floor_lower = floor_key.lower()
-                if ('level 1' in floor_lower or 'floor 1' in floor_lower or 
-                    'ground' in floor_lower or 'l1' in floor_lower or 
-                    floor_key.endswith(' 1')):
+                if (
+                    "level 1" in floor_lower
+                    or "floor 1" in floor_lower
+                    or "ground" in floor_lower
+                    or "l1" in floor_lower
+                    or floor_key.endswith(" 1")
+                ):
                     ground_floor_group = group
                     ground_floor_key = floor_key
                     break
-            
+
             # If no explicit "Level 1" found, use the last floor in the sorted list (lowest ordinal)
             if not ground_floor_group and floor_groups_created:
                 ground_floor_key, ground_floor_group = floor_groups_created[-1]
                 # DEBUG: print(f"  No explicit 'Level 1' found, using lowest floor: {ground_floor_key}")
-            
+
             # Set visibility for all floors
             for floor_key, group in floor_groups_created:
                 if group == ground_floor_group:
@@ -439,34 +436,38 @@ class MappedInMVFImporter:
                 else:
                     group.setItemVisibilityChecked(False)
                     # DEBUG: print(f"  Hiding {floor_key} (upper floor)")
-                    
+
         elif len(floor_groups_created) == 1:
             # DEBUG: print("Single floor detected, keeping it visible")
             pass  # Single floor is visible by default
-        
+
         # Set canvas extent and refresh
         if layers_data:
             self.iface.mapCanvas().zoomToFullExtent()
             self.iface.mapCanvas().refresh()
-    
+
     def _add_osm_baselayer(self):
         """Add OpenStreetMap XYZ tile layer as base layer"""
         try:
             # OpenStreetMap XYZ tile service URL - correct format for QGIS
             osm_url = "type=xyz&url=https://tile.openstreetmap.org/{z}/{x}/{y}.png&zmax=19&zmin=0&crs=EPSG3857"
-            
+
             # Create the raster layer with correct provider
             osm_layer = QgsRasterLayer(osm_url, "OpenStreetMap", "wms")
-            
+
             # Silent: no console logging in production
-            
+
             if osm_layer.isValid():
                 # Add to project but place at absolute bottom of the layer tree
                 project = QgsProject.instance()
                 # Set visible attribution for OSM tile usage policy
                 try:
-                    osm_layer.serverProperties().setAttribution("© OpenStreetMap contributors")
-                    osm_layer.setAttributionUrl(QUrl("https://www.openstreetmap.org/copyright"))
+                    osm_layer.serverProperties().setAttribution(
+                        "© OpenStreetMap contributors"
+                    )
+                    osm_layer.setAttributionUrl(
+                        QUrl("https://www.openstreetmap.org/copyright")
+                    )
                 except Exception:
                     pass
                 # Avoid auto-adding to legend so we can control position
@@ -475,39 +476,43 @@ class MappedInMVFImporter:
                 # Place at end (visual bottom in the Layers panel)
                 root.insertLayer(len(root.children()), osm_layer)
                 # added successfully
-                
+
             else:
                 # failed to create primary OSM layer
-                
+
                 # Try alternative method using QgsDataSourceUri
                 uri = QgsDataSourceUri()
-                uri.setParam('type', 'xyz')
-                uri.setParam('url', 'https://tile.openstreetmap.org/{z}/{x}/{y}.png')
-                uri.setParam('zmax', '19')
-                uri.setParam('zmin', '0')
-                
-                osm_layer_alt = QgsRasterLayer(uri.encodedUri().data().decode(), "OpenStreetMap", "wms")
+                uri.setParam("type", "xyz")
+                uri.setParam("url", "https://tile.openstreetmap.org/{z}/{x}/{y}.png")
+                uri.setParam("zmax", "19")
+                uri.setParam("zmin", "0")
+
+                osm_layer_alt = QgsRasterLayer(
+                    uri.encodedUri().data().decode(), "OpenStreetMap", "wms"
+                )
                 # Silent
-                
+
                 if osm_layer_alt.isValid():
                     project = QgsProject.instance()
                     try:
-                        osm_layer_alt.serverProperties().setAttribution("© OpenStreetMap contributors")
-                        osm_layer_alt.setAttributionUrl(QUrl("https://www.openstreetmap.org/copyright"))
+                        osm_layer_alt.serverProperties().setAttribution(
+                            "© OpenStreetMap contributors"
+                        )
+                        osm_layer_alt.setAttributionUrl(
+                            QUrl("https://www.openstreetmap.org/copyright")
+                        )
                     except Exception:
                         pass
                     project.addMapLayer(osm_layer_alt, addToLegend=False)
                     root = project.layerTreeRoot()
                     root.insertLayer(len(root.children()), osm_layer_alt)
                     # added via alternative path
-                    
+
                 else:
                     pass
-                    
-        except Exception as e:
-            pass
 
-    
+        except Exception:
+            pass
 
     def _ensure_osm_at_bottom(self):
         """Move any OpenStreetMap XYZ layers to the absolute bottom of the layer tree."""
@@ -519,11 +524,11 @@ class MappedInMVFImporter:
                 if not layer:
                     continue
                 name_matches = layer.name() == "OpenStreetMap"
-                source = getattr(layer, 'source', None)
+                source = getattr(layer, "source", None)
                 source_matches = False
                 if callable(source):
                     try:
-                        source_matches = 'tile.openstreetmap.org' in layer.source()
+                        source_matches = "tile.openstreetmap.org" in layer.source()
                     except Exception:
                         source_matches = False
                 if not (name_matches or source_matches):
@@ -543,5 +548,5 @@ class MappedInMVFImporter:
                     node.parent().removeChildNode(node)
                     moved += 1
             # no-op logging
-        except Exception as e:
+        except Exception:
             pass
