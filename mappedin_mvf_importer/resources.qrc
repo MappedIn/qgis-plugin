@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/plugins/mappedin_mvf_importer" >
-        <file>logowhite.png</file>
-    </qresource>
-</RCC>
