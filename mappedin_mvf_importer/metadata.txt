@@ -2,7 +2,7 @@
 name=Mappedin MVF Importer
 qgisMinimumVersion=3.0
 description=A QGIS plugin for importing Mappedin MVF v3 (Map Venue Format) packages from local files or directly from the Mappedin API
-version=2.0.2
+version=2.0.1
 author=Mappedin
 email=help@mappedin.com
 
