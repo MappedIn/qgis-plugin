@@ -205,16 +205,7 @@ This project is licensed under the GPL v3 License - see the [LICENSE](LICENSE) f
 
 ## Changelog
 
-### v2.0.2 (Latest)
-- **🎨 Logo Update**: Updated plugin logo for better visual consistency  
-- **🔧 Qt Resources Fix**: Regenerated Qt resources to ensure new logo displays correctly in QGIS toolbar
-- **✨ Code Quality**: Applied comprehensive linting improvements with ruff formatter
-  - Fixed bare except clauses to specify Exception types
-  - Removed unused variables throughout codebase  
-  - Fixed boolean comparisons and improved code formatting
-  - All ruff checks now pass without errors
-
-### v2.0.1
+### v2.0.1 (Latest)
 - **🎨 Logo Update**: Updated plugin logo for better visual consistency
 
 ### v2.0.0
