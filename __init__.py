@@ -30,6 +30,6 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :type iface: QgsInterface
     """
     #
-    from mappedin_mvf_importer.mappedin_mvf_importer import MappedInMVFImporter
+    from .mappedin_mvf_importer import MappedInMVFImporter
 
     return MappedInMVFImporter(iface)
