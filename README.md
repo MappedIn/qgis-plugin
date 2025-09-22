@@ -205,7 +205,12 @@ This project is licensed under the GPL v3 License - see the [LICENSE](LICENSE) f
 
 ## Changelog
 
-### v2.0.2 (Latest)
+### v2.0.3 (Latest)
+- Fix: Switched to relative import in `__init__.py` to avoid module shadowing when a nested `mappedin_mvf_importer/` folder exists.
+- Fix: Adjusted packaging guidance to prevent nested directory structure from marketplace installs.
+- Chore: Bump version to 2.0.3 for marketplace submission.
+
+### v2.0.2
 - **🎨 Logo Update**: Updated plugin logo for better visual consistency  
 - **🔧 Qt Resources Fix**: Regenerated Qt resources to ensure new logo displays correctly in QGIS toolbar
 - **✨ Code Quality**: Applied comprehensive linting improvements with ruff formatter
