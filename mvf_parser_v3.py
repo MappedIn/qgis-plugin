@@ -224,16 +224,16 @@ class MVFv3Parser:
         if not geometry_data["features"]:
             return []
 
-        # Group geometry by type AND by kind (doors, windows, walls, etc.)
+        # Group geometry by type AND by kind (doors, windows, walls, objects, etc.)
         polygons = []
         lines = []
         points = []
         doors = []
         windows = []
         walls = []
-
-        # Counters for debugging
-        objects_skipped = 0
+        object_polygons = []
+        object_lines = []
+        object_points = []
 
         # Get kinds data for this floor
         floor_kinds = self.kinds.get(floor_id, {})
@@ -278,10 +278,16 @@ class MVFv3Parser:
 
             geom_type = geometry.type()
 
-            # Skip objects entirely - they clutter the visualization
+            # Extract map objects (desks, furniture, fixtures, etc.) to their own
+            # layers instead of mixing them with spaces.
             kind_lower = geom_kind.lower()
             if "object" in kind_lower:
-                objects_skipped += 1
+                if geom_type == QgsWkbTypes.PolygonGeometry:
+                    object_polygons.append(feature_data)
+                elif geom_type == QgsWkbTypes.LineGeometry:
+                    object_lines.append(feature_data)
+                elif geom_type == QgsWkbTypes.PointGeometry:
+                    object_points.append(feature_data)
                 continue
 
             # Categorize by kind first, then by geometry type
@@ -308,24 +314,12 @@ class MVFv3Parser:
             else:
                 # Fallback to geometry type for other features (but only specific types for connections)
                 if geom_type == QgsWkbTypes.PolygonGeometry:
-                    # Only add non-object polygons
-                    if "object" not in kind_lower:
-                        polygons.append(feature_data)
-                    else:
-                        if len(polygons) < 3:  # Debug what we're filtering
-                            # DEBUG: print(f"  -> SKIPPED POLYGON OBJECT: {geom_id} (kind: {geom_kind})")
-                            pass
+                    polygons.append(feature_data)
                 elif geom_type == QgsWkbTypes.LineGeometry:
-                    # Only add non-object lines
-                    if "object" not in kind_lower:
-                        lines.append(feature_data)
-                        if len(lines) <= 3:  # Debug first few lines
-                            # DEBUG: print(f"  -> Added to LINES: {geom_id} (kind: {geom_kind})")
-                            pass
-                    else:
-                        if len(lines) < 3:  # Debug what we're filtering
-                            # DEBUG: print(f"  -> SKIPPED LINE OBJECT: {geom_id} (kind: {geom_kind})")
-                            pass
+                    lines.append(feature_data)
+                    if len(lines) <= 3:  # Debug first few lines
+                        # DEBUG: print(f"  -> Added to LINES: {geom_id} (kind: {geom_kind})")
+                        pass
                 elif geom_type == QgsWkbTypes.PointGeometry:
                     # Skip door navigation points (API MVF creates -p1, -p2 points for doors)
                     is_door_navigation_point = "-p1" in geom_id or "-p2" in geom_id
@@ -358,10 +352,6 @@ class MVFv3Parser:
                             pass
                 else:
                     pass
-
-        # Debug summary - count processed features
-        # total_processed = len(doors) + len(windows) + len(walls) + len(polygons) + len(lines) + len(points)
-        # DEBUG: print(f"Processing summary: {total_features} total -> {objects_skipped} objects skipped -> {processed_features} features processed")
 
         layers = []
         floor_name = self._get_floor_name(floor_id)
@@ -413,6 +403,39 @@ class MVFv3Parser:
         else:
             pass
             # DEBUG: print(f"Skipping empty Walls layer for {floor_name}")
+
+        if object_polygons:
+            layers.append(
+                {
+                    "name": f"{floor_name} - Objects",
+                    "type": "polygon",
+                    "features": object_polygons,
+                    "fields": self._get_geometry_fields(),
+                    "style_type": "object_polygon",
+                }
+            )
+
+        if object_lines:
+            layers.append(
+                {
+                    "name": f"{floor_name} - Object Lines",
+                    "type": "linestring",
+                    "features": object_lines,
+                    "fields": self._get_geometry_fields(),
+                    "style_type": "object_line",
+                }
+            )
+
+        if object_points:
+            layers.append(
+                {
+                    "name": f"{floor_name} - Object Points",
+                    "type": "point",
+                    "features": object_points,
+                    "fields": self._get_geometry_fields(),
+                    "style_type": "object_point",
+                }
+            )
 
         # Only create layers if they have actual features
         if polygons:
@@ -673,6 +696,53 @@ class MVFv3Parser:
             )
             layer.setRenderer(QgsSingleSymbolRenderer(symbol))
             layer.setOpacity(1.0)
+        except Exception:
+            pass
+
+    def _configure_object_polygon_layer_styling(self, layer: QgsVectorLayer):
+        """Styling for map object polygons such as desks and furniture."""
+        try:
+            symbol = QgsFillSymbol.createSimple(
+                {
+                    "color": "#C8A45D",
+                    "outline_color": "#5C4A2A",
+                    "outline_width": "0.25",
+                    "style": "solid",
+                }
+            )
+            layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+            layer.setOpacity(0.9)
+        except Exception:
+            pass
+
+    def _configure_object_line_layer_styling(self, layer: QgsVectorLayer):
+        """Styling for map object line geometry."""
+        try:
+            symbol = QgsLineSymbol.createSimple(
+                {
+                    "color": "#8A6F3D",
+                    "width": "0.5",
+                    "capstyle": "round",
+                    "joinstyle": "round",
+                }
+            )
+            layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+        except Exception:
+            pass
+
+    def _configure_object_point_layer_styling(self, layer: QgsVectorLayer):
+        """Styling for map object point geometry."""
+        try:
+            symbol = QgsMarkerSymbol.createSimple(
+                {
+                    "name": "square",
+                    "color": "#C8A45D",
+                    "outline_color": "#5C4A2A",
+                    "outline_width": "0.25",
+                    "size": "2.5",
+                }
+            )
+            layer.setRenderer(QgsSingleSymbolRenderer(symbol))
         except Exception:
             pass
 
@@ -1089,6 +1159,15 @@ class MVFv3Parser:
                 layer.triggerRepaint()
             elif style_type == "line_doors":
                 self._configure_line_doors_layer_styling(layer)
+                layer.triggerRepaint()
+            elif style_type == "object_polygon":
+                self._configure_object_polygon_layer_styling(layer)
+                layer.triggerRepaint()
+            elif style_type == "object_line":
+                self._configure_object_line_layer_styling(layer)
+                layer.triggerRepaint()
+            elif style_type == "object_point":
+                self._configure_object_point_layer_styling(layer)
                 layer.triggerRepaint()
             elif "Connections" in layer_name:
                 self._configure_connections_layer_styling(layer)
