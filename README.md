@@ -14,13 +14,14 @@ This plugin provides seamless integration between Mappedin's indoor mapping plat
 
 ### 🏗️ **Smart Layer Organization**
 - **Floor-based Grouping**: Automatically organizes layers by floor levels
-- **Layer Categorization**: Separates doors, windows, walls, connections, spaces, and locations
+- **Layer Categorization**: Separates doors, windows, walls, objects, connections, spaces, and locations
 - **Multi-floor Visibility**: Auto-hides upper floors, shows ground floor by default
 
 ### 🎨 **Intelligent Styling**
 - **Doors**: White lines (1.4 width) with proper categorization
 - **Windows**: Blue lines (1.2 width) for clear identification  
 - **Walls**: Dark grey lines for structural elements
+- **Objects**: Tan polygon, line, or point layers for desks, furniture, and fixtures
 - **Connections**: Green arrow markers (size 4) for stairs/elevators only
 - **Locations**: Styled point markers with labeling
 
@@ -86,6 +87,7 @@ The plugin creates a comprehensive layer structure:
 │   ├── 🚪 Level 1 - Doors (white lines)
 │   ├── 🪟 Level 1 - Windows (blue lines)  
 │   ├── 🧱 Level 1 - Walls (grey lines)
+│   ├── 🪑 Level 1 - Objects (tan polygons/lines/points)
 │   ├── ⬆️ Level 1 - Connections (green arrows)
 │   └── 🏠 Level 1 - Spaces (polygons)
 ├── 📁 Level 2 Group (hidden by default)

@@ -312,6 +312,7 @@ class MappedInMVFImporter:
                         "doors": [],
                         "windows": [],
                         "walls": [],
+                        "objects": [],
                         "points": [],
                         "lines": [],
                         "spaces": [],
@@ -326,6 +327,8 @@ class MappedInMVFImporter:
                     floor_layers[floor_key]["windows"].append(layer_info)
                 elif "Walls" in layer_name:
                     floor_layers[floor_key]["walls"].append(layer_info)
+                elif "Objects" in layer_name or "Object " in layer_name:
+                    floor_layers[floor_key]["objects"].append(layer_info)
                 elif "Connections" in layer_name:
                     floor_layers[floor_key]["points"].append(layer_info)
                 elif "Lines" in layer_name or "Doors" in layer_name:
@@ -357,6 +360,7 @@ class MappedInMVFImporter:
                 + len(floor_data["doors"])
                 + len(floor_data["windows"])
                 + len(floor_data["walls"])
+                + len(floor_data["objects"])
                 + len(floor_data["points"])
                 + len(floor_data["lines"])
                 + len(floor_data["spaces"])
@@ -371,12 +375,13 @@ class MappedInMVFImporter:
             floor_groups_created.append((floor_key, group))
             layers_added = 0
 
-            # Add layers in specific order: Locations, Doors, Windows, Walls, Connections, Lines, Spaces
+            # Add layers in specific order: Locations, Doors, Windows, Walls, Objects, Connections, Lines, Spaces
             layer_order = [
                 ("locations", floor_data["locations"]),
                 ("doors", floor_data["doors"]),
                 ("windows", floor_data["windows"]),
                 ("walls", floor_data["walls"]),
+                ("objects", floor_data["objects"]),
                 ("connections", floor_data["points"]),
                 ("lines", floor_data["lines"]),
                 ("spaces", floor_data["spaces"]),
